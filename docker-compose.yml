@@ -1,0 +1,73 @@
+version: '3'
+services:
+
+  nginx-proxy:
+    image: jwilder/nginx-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - dnsrobocert
+    volumes:
+      # Link SSL certificates
+      - /etc/letsencrypt/live/${DOMAIN}/fullchain.pem:/etc/nginx/certs/${DOMAIN}.crt
+      - /etc/letsencrypt/live/${DOMAIN}/privkey.pem:/etc/nginx/certs/${DOMAIN}.key
+      - /etc/letsencrypt/live/${DOMAIN}/chain.pem:/etc/nginx/certs/${DOMAIN}.chain.pem
+      # Docker
+      - /var/run/docker.sock:/tmp/docker.sock:ro
+      # Nginx
+      - ./proxy/vhost.d/:/etc/nginx/vhost.d/
+    environment:
+      DEFAULT_HOST: ${DOMAIN}
+
+  ## Issue SSL certificate
+  dnsrobocert:
+    image: adferrand/dnsrobocert
+    restart: always
+    volumes:
+      - /etc/letsencrypt:/etc/letsencrypt
+      - ./ssl-config.yml:/etc/dnsrobocert/config.yml
+    environment:
+      - DRAFT
+      - LETSENCRYPT_STAGING
+      - LETSENCRYPT_EMAIL
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+
+  mariadb:
+    image: 'docker.io/bitnami/mariadb:10.3-debian-10'
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+      - MARIADB_USER=dp_ghost_user
+      - MARIADB_DATABASE=dp_ghost
+    volumes:
+      - 'mariadb_data:/bitnami'
+
+  ghost:
+    image: 'docker.io/bitnami/ghost:3-debian-10'
+    environment:
+      VIRTUAL_HOST: ${DOMAIN},ghost.${DOMAIN}
+      VIRTUAL_PORT: 2368
+      MARIADB_HOST: mariadb
+      MARIADB_PORT_NUMBER: 3306
+      GHOST_DATABASE_USER: dp_ghost_user
+      GHOST_DATABASE_NAME: dp_ghost
+      ALLOW_EMPTY_PASSWORD: 'yes'
+      GHOST_HOST: ${DOMAIN}
+      GHOST_PORT_NUMBER: 443
+      GHOST_PROTOCOL: https
+      GHOST_USERNAME: ${GHOST_USERNAME}
+      GHOST_PASSWORD: ${GHOST_PASSWORD}
+      GHOST_EMAIL: ${GHOST_EMAIL}
+      BLOG_TITLE: ${BLOG_TITLE}
+    volumes:
+      - 'ghost_data:/bitnami'
+    depends_on:
+      - mariadb
+
+volumes:
+  mariadb_data:
+    driver: local
+  ghost_data:
+    driver: local
