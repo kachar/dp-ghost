@@ -1,0 +1,20 @@
+# https://dnsrobocert.readthedocs.io/en/latest/configuration_reference.html
+draft: ${DRAFT}
+acme:
+  staging: ${LETSENCRYPT_STAGING}
+  email_account: ${LETSENCRYPT_EMAIL}
+
+profiles:
+  - name: route53_profile
+    provider: route53
+    provider_options:
+      auth_access_key: ${AWS_ACCESS_KEY_ID}
+      auth_access_secret: ${AWS_SECRET_ACCESS_KEY}
+      private_zone: false
+
+certificates:
+  - domains:
+    - tech-ops.life
+    - "*.tech-ops.life"
+    profile: route53_profile
+    name: tech-ops.life
