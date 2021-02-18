@@ -1,5 +1,20 @@
-version: '3'
+version: '3.8'
 services:
+
+  app:
+    build:
+      context: ./
+      dockerfile: ./Dockerfile
+      target: ${TARGET_ENV}
+      args:
+        NODE_ENV: ${NODE_ENV}
+
+    environment:
+      VIRTUAL_HOST: ${DOMAIN}
+      VIRTUAL_PORT: ${APP_PORT}
+      APP_URL: ${APP_URL}
+      GHOST_URL: ${API_URL}
+      NEXTAUTH_URL: ${NEXTAUTH_URL}
 
   nginx-proxy:
     image: jwilder/nginx-proxy
@@ -47,14 +62,14 @@ services:
   ghost:
     image: 'docker.io/bitnami/ghost:3-debian-10'
     environment:
-      VIRTUAL_HOST: ${DOMAIN},ghost.${DOMAIN}
+      VIRTUAL_HOST: cms.${DOMAIN}
       VIRTUAL_PORT: 2368
       MARIADB_HOST: mariadb
       MARIADB_PORT_NUMBER: 3306
       GHOST_DATABASE_USER: dp_ghost_user
       GHOST_DATABASE_NAME: dp_ghost
       ALLOW_EMPTY_PASSWORD: 'yes'
-      GHOST_HOST: ${DOMAIN}
+      GHOST_HOST: cms.${DOMAIN}
       GHOST_PORT_NUMBER: 443
       GHOST_PROTOCOL: https
       GHOST_USERNAME: ${GHOST_USERNAME}
